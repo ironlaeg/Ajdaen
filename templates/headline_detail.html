@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ headline.title }} - Aidaen{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb" data-aos="fade-up">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'news:headline_list' %}">Новости</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ headline.title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Главное изображение -->
+{% if headline.image %}
+<div class="hero-image mb-4" data-aos="fade-up" data-aos-delay="100">
+    <img src="{{ headline.image.url }}" alt="{{ headline.title }}" class="img-fluid rounded shadow-custom">
+</div>
+{% endif %}
+
+<!-- Основной контент -->
+<div class="news-detail" data-aos="fade-up" data-aos-delay="200">
+    <div class="news-header mb-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="meta-info text-end">
+                <small class="text-muted d-block">
+                    <i class="fas fa-calendar me-1"></i>{{ headline.published_at|date:"d.m.Y H:i" }}
+                </small>
+                <small class="text-muted">
+                    <i class="fas fa-user me-1"></i>{{ headline.author.username }}
+                </small>
+            </div>
+        </div>
+        
+        <h1 class="news-title">{{ headline.title }}</h1>
+        
+        {% if headline.short_description %}
+        <p class="lead news-lead">{{ headline.short_description }}</p>
+        {% endif %}
+    </div>
+    
+    <!-- Теги -->
+    {% if headline.tags.exists %}
+    <div class="tags-section mb-4" data-aos="fade-up" data-aos-delay="300">
+        <h6 class="mb-2"><i class="fas fa-tags me-2"></i>Теги:</h6>
+        {% for tag in headline.tags.all %}
+        <a href="{% url 'news:tag_list' tag.slug %}" class="tag-badge">
+            {{ tag.name }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Содержание -->
+    <div class="news-content" data-aos="fade-up" data-aos-delay="400">
+        <div class="content-text">
+            {{ headline.content|linebreaks }}
+        </div>
+    </div>
+    
+    <!-- PDF файл -->
+    {% if headline.pdf_file %}
+    <div class="pdf-section mt-4" data-aos="fade-up" data-aos-delay="450">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-file-pdf me-2 text-danger"></i>Прикрепленный PDF файл
+                </h5>
+                <p class="card-text">
+                    <a href="{{ headline.pdf_file.url }}" target="_blank" class="btn btn-danger btn-lg">
+                        <i class="fas fa-file-pdf me-2"></i>Открыть PDF
+                    </a>
+                    <a href="{{ headline.pdf_file.url }}" download class="btn btn-outline-danger btn-lg ms-2">
+                        <i class="fas fa-download me-2"></i>Скачать PDF
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Действия -->
+    {% if user.is_authenticated and user == headline.author %}
+    <div class="news-actions mt-4" data-aos="fade-up" data-aos-delay="500">
+        <a href="{% url 'news:headline_edit' headline.pk %}" class="btn btn-outline-primary me-2">
+            <i class="fas fa-edit me-1"></i>Редактировать
+        </a>
+        <a href="{% url 'news:headline_delete' headline.pk %}" class="btn btn-outline-danger">
+            <i class="fas fa-trash me-1"></i>Удалить
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Похожие новости -->
+{% if related_headlines %}
+<div class="related-news mt-5" data-aos="fade-up" data-aos-delay="600">
+    <h3 class="mb-4">
+        <i class="fas fa-newspaper me-2"></i>Похожие новости
+    </h3>
+    <div class="row">
+        {% for related in related_headlines %}
+        <div class="col-md-6 mb-3">
+            <div class="card related-card h-100">
+                {% if related.image %}
+                <img src="{{ related.image.url }}" class="card-img-top" alt="{{ related.title }}" style="height: 150px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center" style="height: 150px;">
+                    <i class="fas fa-image text-white" style="font-size: 2rem;"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <a href="{% url 'news:headline_detail' related.pk %}" class="text-decoration-none">
+                            {{ related.title }}
+                        </a>
+                    </h6>
+                    <p class="card-text small">{{ related.short_description|truncatewords:15 }}</p>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>{{ related.published_at|date:"d.m.Y" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Социальные кнопки -->
+<div class="social-share mt-5 text-center" data-aos="fade-up" data-aos-delay="700">
+    <h6 class="mb-3">Поделиться новостью:</h6>
+    <div class="social-buttons">
+        <a href="#" class="btn btn-outline-primary me-2" onclick="shareOnFacebook()">
+            <i class="fab fa-facebook me-1"></i>Facebook
+        </a>
+        <a href="#" class="btn btn-outline-info me-2" onclick="shareOnTwitter()">
+            <i class="fab fa-twitter me-1"></i>Twitter
+        </a>
+        <a href="#" class="btn btn-outline-success me-2" onclick="shareOnTelegram()">
+            <i class="fab fa-telegram me-1"></i>Telegram
+        </a>
+        <a href="#" class="btn btn-outline-secondary" onclick="copyLink()">
+            <i class="fas fa-link me-1"></i>Копировать ссылку
+        </a>
+    </div>
+</div>
+
+<script>
+function shareOnFacebook() {
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+}
+
+function shareOnTwitter() {
+    const url = encodeURIComponent(window.location.href);
+    const title = encodeURIComponent('{{ headline.title }}');
+    window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, '_blank');
+}
+
+function shareOnTelegram() {
+    const url = encodeURIComponent(window.location.href);
+    const title = encodeURIComponent('{{ headline.title }}');
+    window.open(`https://t.me/share/url?url=${url}&text=${title}`, '_blank');
+}
+
+function copyLink() {
+    navigator.clipboard.writeText(window.location.href).then(function() {
+        AidaenJS.showNotification('Ссылка скопирована в буфер обмена!', 'success');
+    });
+}
+</script>
+{% endblock %}

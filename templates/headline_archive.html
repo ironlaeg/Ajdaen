@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Архив новостей - Aidaen{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb" data-aos="fade-up">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'news:headline_list' %}">Новости</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Архив</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div data-aos="fade-up" data-aos-delay="100">
+    <h1 class="text-gradient mb-4">
+        <i class="fas fa-archive me-2"></i>Архив новостей
+    </h1>
+</div>
+
+{% if archive_data %}
+    {% for year_data in archive_data %}
+    <div class="year-section mb-5" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:200 }}">
+        <h2 class="border-bottom pb-2 mb-4">
+            <i class="fas fa-calendar me-2"></i>{{ year_data.year }} год
+        </h2>
+        
+        {% for month_data in year_data.months %}
+        <div class="month-section mb-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:300 }}">
+            <h4 class="text-primary mb-3">
+                <i class="fas fa-calendar-alt me-2"></i>{{ month_data.month_name }}
+            </h4>
+            
+            <div class="row">
+                {% for headline in month_data.headlines %}
+                <div class="col-md-6 mb-3">
+                    <div class="card news-card h-100">
+                        {% if headline.image %}
+                        <img src="{{ headline.image.url }}" class="card-img-top" alt="{{ headline.title }}" style="height: 150px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-gradient-primary d-flex align-items-center justify-content-center" style="height: 150px;">
+                            <i class="fas fa-image text-white" style="font-size: 2rem;"></i>
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <a href="{% url 'news:headline_detail' headline.pk %}" class="text-decoration-none">
+                                    {{ headline.title }}
+                                </a>
+                            </h6>
+                            <p class="card-text small">{{ headline.short_description|truncatewords:15 }}</p>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>{{ headline.published_at|date:"d.m.Y H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+{% else %}
+<div class="alert alert-info text-center" role="alert" data-aos="fade-up">
+    <i class="fas fa-info-circle me-2"></i>
+    В архиве пока нет новостей.
+</div>
+{% endif %}
+{% endblock %}

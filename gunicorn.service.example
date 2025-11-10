@@ -1,0 +1,24 @@
+# Systemd service file for Gunicorn
+# Copy this file to /etc/systemd/system/gunicorn.service
+# Don't forget to update paths and user/group names
+
+[Unit]
+Description=gunicorn daemon for Aidaen Django project
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/your/project/SITE_PROEKT
+Environment="PATH=/path/to/venv/bin"
+ExecStart=/path/to/venv/bin/gunicorn \
+          --config /path/to/your/project/SITE_PROEKT/gunicorn_config.py \
+          --access-logfile - \
+          --error-logfile - \
+          Aidaen.wsgi:application
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
