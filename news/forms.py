@@ -22,15 +22,14 @@ class HeadlineForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        # Устанавливаем queryset для тегов
         self.fields['tags'].queryset = Tag.objects.all()
 
-        # Ограничиваем выбор статуса для обычных пользователей
+
         if user and not user.is_staff:
             self.fields['status'].choices = [
                 ('draft', 'Черновик'),
                 ('published', 'Опубликовано'),
             ]
         else:
-            # Для staff показываем все варианты статуса
+
             self.fields['status'].choices = Headline.STATUS_CHOICES

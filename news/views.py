@@ -19,10 +19,8 @@ from news.forms import HeadlineForm
 
 
 class MonthlyLinksMixin:
-    """Миксин для добавления месячных ссылок в контекст"""
     
     def get_russian_month_name(self, year, month):
-        """Получаем русское название месяца"""
         months = [
             'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
             'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
@@ -30,10 +28,8 @@ class MonthlyLinksMixin:
         return f"{months[month-1]} {year}"
     
     def get_monthly_links(self):
-        """Получаем ссылки на месяцы с опубликованными новостями"""
         from django.db.models import Count
-        
-        # Получаем месяцы с опубликованными новостями
+
         months = Headline.objects.filter(
             status='published',
             published_at__isnull=False
@@ -46,7 +42,6 @@ class MonthlyLinksMixin:
         
         monthly_links = []
         for month_data in months:
-            # Проверяем, что year и month не None
             if month_data['year'] and month_data['month']:
                 year = int(month_data['year'])
                 month = int(month_data['month'])
@@ -60,7 +55,6 @@ class MonthlyLinksMixin:
         return monthly_links
     
     def get_popular_tags(self):
-        """Получаем популярные теги (только для опубликованных новостей)"""
         return Tag.objects.annotate(
             news_count=Count(
                 'headline',
@@ -82,7 +76,6 @@ class HeadlineListView(MonthlyLinksMixin, ListView):
             published_at__isnull=False
         ).select_related('author').prefetch_related('tags').distinct()
 
-        # Поиск
         search_query = self.request.GET.get('q')
         if search_query:
             queryset = queryset.filter(
@@ -91,7 +84,6 @@ class HeadlineListView(MonthlyLinksMixin, ListView):
                 Q(short_description__icontains=search_query)
             )
 
-        # Фильтрация по тегу
         tag_slug = self.request.GET.get('tag')
         if tag_slug:
             queryset = queryset.filter(tags__slug=tag_slug).distinct()
@@ -101,14 +93,11 @@ class HeadlineListView(MonthlyLinksMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search_query'] = self.request.GET.get('q', '')
-        
-        # Добавляем месячные ссылки для сайдбара
+
         context['monthly_links'] = self.get_monthly_links()
-        
-        # Добавляем популярные теги
+
         context['popular_tags'] = self.get_popular_tags()
-        
-        # Добавляем текущие фильтры
+
         context['current_tag'] = self.request.GET.get('tag')
         
         return context
@@ -124,18 +113,15 @@ class HeadlineDetailView(MonthlyLinksMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Похожие новости
         context['related_headlines'] = Headline.objects.filter(
             status='published',
             published_at__isnull=False
         ).exclude(
             pk=self.object.pk
         )[:5]
-        
-        # Добавляем месячные ссылки для сайдбара
+
         context['monthly_links'] = self.get_monthly_links()
-        
-        # Добавляем популярные теги для сайдбара
+
         context['popular_tags'] = self.get_popular_tags()
         
         return context
@@ -149,7 +135,6 @@ class HeadlineCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.author = self.request.user
-        # Устанавливаем published_at если статус published
         if form.instance.status == 'published' and not form.instance.published_at:
             from django.utils import timezone
             form.instance.published_at = timezone.now()
@@ -158,7 +143,6 @@ class HeadlineCreateView(LoginRequiredMixin, CreateView):
         return response
 
     def form_invalid(self, form):
-        # Логируем ошибки формы для отладки
         if self.request.POST:
             messages.error(self.request, 'Пожалуйста, исправьте ошибки в форме.')
             for field, errors in form.errors.items():
@@ -179,7 +163,6 @@ class HeadlineUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'headline_form.html'
 
     def form_valid(self, form):
-        # Устанавливаем published_at если статус изменился на published и дата еще не установлена
         if form.instance.status == 'published' and not form.instance.published_at:
             from django.utils import timezone
             form.instance.published_at = timezone.now()
@@ -187,7 +170,6 @@ class HeadlineUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        # Логируем ошибки формы для отладки
         if self.request.POST:
             messages.error(self.request, 'Пожалуйста, исправьте ошибки в форме.')
             for field, errors in form.errors.items():
@@ -247,17 +229,14 @@ class HeadlineMonthArchiveView(MonthlyLinksMixin, ListView):
         context = super().get_context_data(**kwargs)
         year = self.kwargs['year']
         month = self.kwargs['month']
-        
-        # Добавляем информацию о месяце
+
         from django.utils import timezone
         context['archive_year'] = year
         context['archive_month'] = month
         context['archive_month_name'] = self.get_russian_month_name(year, month)
-        
-        # Добавляем месячные ссылки для сайдбара
+
         context['monthly_links'] = self.get_monthly_links()
-        
-        # Добавляем популярные теги для сайдбара
+
         context['popular_tags'] = self.get_popular_tags()
         
         return context
@@ -273,8 +252,7 @@ class HeadlineArchiveView(MonthlyLinksMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Группируем новости по годам и месяцам
+
         headlines = self.get_queryset()
         archive_data = defaultdict(lambda: defaultdict(list))
         
@@ -282,8 +260,7 @@ class HeadlineArchiveView(MonthlyLinksMixin, ListView):
             year = headline.published_at.year
             month = headline.published_at.month
             archive_data[year][month].append(headline)
-        
-        # Преобразуем в список для шаблона
+
         archive_list = []
         for year in sorted(archive_data.keys(), reverse=True):
             year_data = {'year': year, 'months': []}
@@ -297,11 +274,9 @@ class HeadlineArchiveView(MonthlyLinksMixin, ListView):
             archive_list.append(year_data)
         
         context['archive_data'] = archive_list
-        
-        # Добавляем месячные ссылки для сайдбара
+
         context['monthly_links'] = self.get_monthly_links()
-        
-        # Добавляем популярные теги для сайдбара
+
         context['popular_tags'] = self.get_popular_tags()
         
         return context
@@ -325,14 +300,8 @@ class TagListView(MonthlyLinksMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['tag'] = self.tag
         context['page_title'] = f'Новости с тегом: {self.tag.name}'
-        
-        # Добавляем месячные ссылки для сайдбара
         context['monthly_links'] = self.get_monthly_links()
-        
-        # Добавляем популярные теги
         context['popular_tags'] = self.get_popular_tags()
-        
-        # Устанавливаем текущий тег
         context['current_tag'] = self.tag.slug
         
         return context
